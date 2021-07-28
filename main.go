@@ -13,15 +13,19 @@ func main() {
 	ips := getIPs()
 
 	var wg sync.WaitGroup
+
 	for _, ip := range ips {
+		wg.Add(1)
 		go ping(ip, &wg)
 	}
 
 	wg.Wait()
+	// time.Sleep(1 * time.Hour)
 }
 
 func getIPs() []string {
-	out, err := exec.Command("arp", "-a").Output()
+	cmd := exec.Command("arp", "-a")
+	out, err := cmd.Output()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -45,11 +49,10 @@ func getIPs() []string {
 }
 
 func ping(ip string, wg *sync.WaitGroup) {
-	RunCommand("ping", ip, "-i 0.2", "-s 300", "-c 100")
-	wg.Add(1)
+	RunCommand(wg, "ping", ip, "-i 0.2", "-s 300", "-c 100")
 }
 
-func RunCommand(name string, arg ...string) error {
+func RunCommand(wg *sync.WaitGroup, name string, arg ...string) error {
 	cmd := exec.Command(name, arg...)
 	stdout, err := cmd.StdoutPipe()
 	cmd.Stderr = cmd.Stdout
@@ -74,7 +77,10 @@ func RunCommand(name string, arg ...string) error {
 	}
 
 	if err = cmd.Wait(); err != nil {
+		wg.Done()
 		return err
 	}
+
+	wg.Done()
 	return nil
 }

@@ -1,3 +1,3 @@
 # pinging-network
 
-`go run main.go > logs.log`
+`go run main.go`
